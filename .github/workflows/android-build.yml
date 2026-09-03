@@ -1,0 +1,57 @@
+name: Android build
+
+on:
+  push:
+    branches:
+      - claude/app-development-3s35ah
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Write Vapi public key
+        # secrets.ts is gitignored (see docs/SETUP.md). Add a repository secret
+        # named VAPI_PUBLIC_KEY (Settings -> Secrets and variables -> Actions)
+        # so real calls work in the built APK. Without it the build still
+        # succeeds, but the app can't start a call until you install a real
+        # key locally.
+        run: |
+          cat > src/config/secrets.ts <<EOF
+          export const VAPI_PUBLIC_KEY = '${{ secrets.VAPI_PUBLIC_KEY }}';
+          EOF
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sleepguide-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

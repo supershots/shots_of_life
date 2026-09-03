@@ -115,6 +115,21 @@ Play Console は使わない。`cd android && ./gradlew assembleRelease` で
 インストールする。ストアに出す場合のみ `USE_EXACT_ALARM` / `USE_FULL_SCREEN_INTENT`
 について Google Play への用途申告が必要になる。
 
+### ビルド環境が無い場合（GitHub Actions での自動ビルド）
+
+Android SDK・実機の無い環境（このリポジトリを操作している Claude のクラウド環境も
+含む）では APK を作れない。代わりに `.github/workflows/android-build.yml` が、
+このブランチに push するたびに GitHub 側でデバッグ APK をビルドし、Actions の
+実行結果に Artifact として添付する。
+
+1. GitHub の当該リポジトリの Settings → Secrets and variables → Actions で、
+   `VAPI_PUBLIC_KEY` という名前のリポジトリシークレットに Vapi の公開鍵を登録する
+   （これを登録しないとビルドは通るが、生成された APK は通話を開始できない）。
+2. `claude/app-development-3s35ah` に push する、または Actions タブから
+   `Android build` ワークフローを手動実行（workflow_dispatch）する。
+3. 完了したワークフロー実行のページ下部 Artifacts から `sleepguide-debug-apk`
+   をダウンロードし、端末に転送してインストールする。
+
 ## 6. 受け入れ基準（09章、そのまま転記）
 
 - [ ] 指定時刻に、ロック画面へ全画面の着信が出る

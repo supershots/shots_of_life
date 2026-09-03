@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import androidx.core.content.pm.ServiceInfoCompat
 import com.sleepguide.R
 
 /**
@@ -25,11 +24,13 @@ class CallForegroundService : Service() {
   override fun onBind(intent: Intent?): IBinder? = null
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-    startForeground()
+    beginForeground()
     return START_STICKY
   }
 
-  private fun startForeground() {
+  // Service.startForeground() と同名にすると、後方互換の2引数オーバーロードの
+  // 解決でコンパイラが混乱するため、あえて別名にしてある。
+  private fun beginForeground() {
     ensureChannel()
     val notification = NotificationCompat.Builder(this, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_notification)
@@ -39,15 +40,11 @@ class CallForegroundService : Service() {
         .setPriority(NotificationCompat.PRIORITY_LOW)
         .build()
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-      ServiceCompat.startForeground(
-          this,
-          NOTIFICATION_ID,
-          notification,
-          ServiceInfoCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE)
-    } else {
-      startForeground(NOTIFICATION_ID, notification)
-    }
+    ServiceCompat.startForeground(
+        this,
+        NOTIFICATION_ID,
+        notification,
+        ServiceCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE)
   }
 
   private fun ensureChannel() {

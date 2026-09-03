@@ -79,7 +79,7 @@ export const voiceConfig = {
    * 04章: 声は必ず実機のスピーカーで選ぶこと（PC/ヘッドホンで選ぶと圧縮後に別物になる）。
    * ここは人間にしか決められない。候補を3つに絞って実機比較した結果の voiceId を入れる。
    */
-  voiceId: 'REPLACE_WITH_CHOSEN_ELEVENLABS_VOICE_ID',
+  voiceId: 'a0MsDWokG5Xsuji8g8er',
 };
 
 /**

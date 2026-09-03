@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -40,11 +41,15 @@ class CallForegroundService : Service() {
         .setPriority(NotificationCompat.PRIORITY_LOW)
         .build()
 
-    ServiceCompat.startForeground(
-        this,
-        NOTIFICATION_ID,
-        notification,
-        ServiceCompat.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+    // androidx.core の ServiceCompat.startForeground(4引数) はこのプロジェクトが
+    // 解決する androidx.core のバージョンにまだ無い（CI で Unresolved reference
+    // になることを確認済み）ため、プラットフォーム API を直接、API レベルで
+    // 分岐して呼ぶ。foregroundServiceType 付きの3引数版は API 29 から。
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+    } else {
+      startForeground(NOTIFICATION_ID, notification)
+    }
   }
 
   private fun ensureChannel() {

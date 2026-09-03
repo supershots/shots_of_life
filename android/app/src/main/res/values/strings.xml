@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">ねむりガイド</string>
+    <string name="incoming_call_channel_name">就寝時刻の着信</string>
+    <string name="incoming_call_channel_description">22:50 の就寝ガイド着信</string>
+    <string name="incoming_call_title">ねむりガイド</string>
+    <string name="incoming_call_text">そろそろ寝る準備をはじめよう</string>
+    <string name="incoming_call_decline">閉じる</string>
+    <string name="call_service_notification_title">ねむりガイドと通話中</string>
+    <string name="call_service_notification_text">手順を案内しています</string>
+</resources>

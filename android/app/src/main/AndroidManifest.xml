@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- 通話中はフォアグラウンドサービスで保持（マイクを使用） -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -42,6 +43,17 @@
       <receiver
         android:name=".alarm.AlarmReceiver"
         android:exported="false" />
+
+      <!-- 端末再起動後に毎晩の着信を張り直す（6章の既知の制限を埋める追加実装） -->
+      <receiver
+        android:name=".alarm.BootReceiver"
+        android:exported="false">
+        <intent-filter>
+          <action android:name="android.intent.action.BOOT_COMPLETED" />
+          <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+          <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        </intent-filter>
+      </receiver>
 
       <!-- 通話中プロセスを保持するフォアグラウンドサービス -->
       <service

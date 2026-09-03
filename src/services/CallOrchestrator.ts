@@ -219,6 +219,10 @@ class CallOrchestratorImpl extends EventEmitter {
     }
 
     if (this.currentStepIndex === LAST_STEP_INDEX) {
+      // report_step は「このステップに入った」時点で呼ばれるので、lastCompletedStepIndex
+      // は index-1 までしか進まない。最終ステップを言い切って自ら切ったのは完了の
+      // 証拠なので、ここで初めて最後のステップ自体を「完了」に含める。
+      session.lastCompletedStepIndex = LAST_STEP_INDEX;
       await this.finalizeNight('completed');
       return;
     }

@@ -119,15 +119,20 @@ Play Console は使わない。`cd android && ./gradlew assembleRelease` で
 
 Android SDK・実機の無い環境（このリポジトリを操作している Claude のクラウド環境も
 含む）では APK を作れない。代わりに `.github/workflows/android-build.yml` が、
-このブランチに push するたびに GitHub 側でデバッグ APK をビルドし、Actions の
-実行結果に Artifact として添付する。
+このブランチに push するたびに GitHub 側で **release** APK をビルドし、Actions の
+実行結果に Artifact として添付する。`assembleDebug` ではなく `assembleRelease` な
+のは、debug ビルドは JS バンドルを APK に埋め込まず Metro（開発サーバー）から
+読みにいく前提になっており、単体でインストールすると
+「Unable to load script. Make sure you're either running Metro ...」で起動できない
+ため。署名は `android/app/build.gradle` の設定どおり、release でも直配布用に
+チェックイン済みのデバッグ鍵を使っている。
 
 1. GitHub の当該リポジトリの Settings → Secrets and variables → Actions で、
    `VAPI_PUBLIC_KEY` という名前のリポジトリシークレットに Vapi の公開鍵を登録する
    （これを登録しないとビルドは通るが、生成された APK は通話を開始できない）。
 2. `claude/app-development-3s35ah` に push する、または Actions タブから
    `Android build` ワークフローを手動実行（workflow_dispatch）する。
-3. 完了したワークフロー実行のページ下部 Artifacts から `sleepguide-debug-apk`
+3. 完了したワークフロー実行のページ下部 Artifacts から `sleepguide-release-apk`
    をダウンロードし、端末に転送してインストールする。
 
 ## 6. 受け入れ基準（09章、そのまま転記）

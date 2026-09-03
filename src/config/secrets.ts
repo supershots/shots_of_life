@@ -5,4 +5,4 @@
  * VAPI_PUBLIC_KEY は Vapi ダッシュボード（https://dashboard.vapi.ai）の
  * Public Key。課金設定と合わせて人間が取得する（08章「人間がやるしかないもの」）。
  */
-export const VAPI_PUBLIC_KEY = 'REPLACE_WITH_VAPI_PUBLIC_KEY';
+export const VAPI_PUBLIC_KEY = 'a4ba6382-8e0f-4fbe-87d3-6cf23d3df6ca';

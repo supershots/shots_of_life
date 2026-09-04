@@ -39,10 +39,16 @@ function stepsBlock(mode: Mode): string {
     const n = index + 1;
     const line = `${n}. ${step.label}: 「${step.line[mode]}」`;
     if (step.id === AWAY_STEP_ID) {
-      return `${line}\n   → 言い終えたら通話を終える（endCall）。アプリ側が再接続したら「おかえり」から再開する。中断については説明しない。`;
+      return `${line}\n   → 言い終えたら、相手の返事や反応を待たずに、その場で必ずendCallを呼んで
+     通話を終えること。これは「相手が応答するまで待つ」という原則の例外。相手の返事を
+     待ってしまうと、待たされたユーザーが不自然に感じる（実機テストで、切ると言った
+     あと実際には切らずに待ち続ける不具合が確認されている。ここは待ってはいけない）。
+     アプリ側が再接続したら「おかえり」から再開する。中断については説明しない。`;
     }
     if (step.id === LAST_STEP_ID) {
-      return `${line}\n   → 確認は求めない。言い終えたら10秒待ち、何も言わずに通話を終える（endCall）。`;
+      return `${line}\n   → 確認は求めない。言い終えたら10秒待ち、相手の返事や反応を待たずに、
+     何も言わずに必ずendCallを呼んで通話を終えること。これも「相手が応答するまで待つ」
+     という原則の例外。`;
     }
     if (step.id === 'put_down_phone') {
       return `${line}\n   → 確認は求めない。`;
@@ -83,24 +89,51 @@ function resumeNote(mode: Mode, resume: ResumeContext): string {
   if (!resumeStep) {
     return '';
   }
+  // 開口一番はすでに firstMessage（静的な文字列）として再生済み（LLM のターンを
+  // 挟むと初手の応答が遅くなるため、buildFirstMessage 側で組み立てて済ませてある）。
+  // ここでは「もう一度言わない・繰り返さない」ための文脈だけを渡す。
   if (resume.isAwayReconnect) {
-    return `内部メモ: これは離席中断からの再接続。開口一番は「${STEPS[resumeStepIndex].line[mode]}」から
-（＝「おかえり」に続く一言）で自然に始める。中断や離席について触れない。`;
+    return `内部メモ: これは離席中断からの再接続。開口一番（「おかえり」に続く一言）は
+すでに再生済み。中断や離席について触れない。`;
   }
   if (resume.isRedial) {
-    return `内部メモ: これは再着信（前回途中で切れた）。開口一番で経緯を説明せず、
-「続きからいこう。${resumeStep.label}からだね。」のように自然に切り出してから、
-${resumeStepIndex + 1}. ${resumeStep.label} の手順から再開する。手順1〜${resumeStepIndex} は
+    return `内部メモ: これは再着信（前回途中で切れた）。開口一番の「続きからいこう。
+${resumeStep.label}からだね。」はすでに再生済み。経緯を説明しない。手順1〜${resumeStepIndex} は
 既に完了しているので繰り返さない。`;
   }
   return '';
 }
 
-/** 5章モード比較表「前夜の記録の返し方」。触った分数を開口一番の直後に触れる。 */
-function recapNote(mode: Mode, recapMinutes: number): string {
-  return `内部メモ: 前夜、就寝の合図のあとに ${recapMinutes} 分後にもう一度スマホを触っていた
-記録がある。開口一番のあとに一度だけ軽く触れる: 「${formatRecap(mode, recapMinutes)}」
-責めるトーンにはしない。`;
+/**
+ * 08章「システムプロンプト（下敷き）」の下敷きに加え、通話開始直後の一言目を
+ * ここで静的に組み立てる。すべて script.ts の固定文言だけで決まる（LLM の判断は
+ * 要らない）ので、firstMessage として渡せば LLM のターンを待たずに即座に話し始め
+ * られる。実機テストで「最初の会話のスタートが遅い」と確認された、LLM に開口一番
+ * を生成させていたことによる遅延の対策（以前は report_step を追わせるために
+ * あえて undefined にしていたが、report_step は client 専用ツールで async: true
+ * にしたので、開口一番の report_step 相当はアプリ側で楽観的に反映すれば足りる。
+ * CallOrchestrator.beginCall 側を参照）。
+ */
+export function buildFirstMessage(
+  mode: Mode,
+  resume?: ResumeContext,
+  recapMinutes?: number,
+): string | undefined {
+  if (!resume) {
+    const opening = STEPS[0].line[mode];
+    return recapMinutes != null ? `${opening}${formatRecap(mode, recapMinutes)}` : opening;
+  }
+  const resumeStep = STEPS[resume.lastCompletedStepIndex + 1];
+  if (!resumeStep) {
+    return undefined;
+  }
+  if (resume.isAwayReconnect) {
+    return resumeStep.line[mode];
+  }
+  if (resume.isRedial) {
+    return `続きからいこう。${resumeStep.label}からだね。${resumeStep.line[mode]}`;
+  }
+  return undefined;
 }
 
 /**
@@ -109,11 +142,7 @@ function recapNote(mode: Mode, recapMinutes: number): string {
  * 「今日はやめる」をアプリ側で確定的に検出するための実装上の追加（仕様書本文には
  * 明示されていないが、「到達済みステップは端末に保持しておく」を実現するために必要）。
  */
-export function buildSystemPrompt(
-  mode: Mode,
-  resume?: ResumeContext,
-  recapMinutes?: number,
-): string {
+export function buildSystemPrompt(mode: Mode, resume?: ResumeContext): string {
   const parts = [
     BASE_PRINCIPLES,
     modeVoiceNote(mode),
@@ -127,16 +156,5 @@ export function buildSystemPrompt(
     const note = resumeNote(mode, resume);
     if (note) {parts.push(note);}
   }
-  if (!resume && recapMinutes != null) {
-    parts.push(recapNote(mode, recapMinutes));
-  }
   return parts.join('\n\n');
-}
-
-export function buildFirstMessage(_mode: Mode, _resume?: ResumeContext): string | undefined {
-  // firstMessage を明示指定すると LLM を介さずその文字列がそのまま再生され、
-  // report_step ツールを呼ぶ機会がない（LLM のターンが発生しないため）。
-  // 開口一番も他の手順と同じく report_step で進捗を拾えるよう、常に undefined
-  // にして LLM 自身に system prompt の手順1から生成させる。
-  return undefined;
 }

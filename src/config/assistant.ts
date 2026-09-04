@@ -8,7 +8,7 @@ import {
   transcriberConfig,
   voiceConfig,
 } from './vapiCallConfig';
-import {buildSystemPrompt, ResumeContext} from './systemPrompt';
+import {buildFirstMessage, buildSystemPrompt, ResumeContext} from './systemPrompt';
 import type {TranscriptTurn} from '../types';
 
 export const REPORT_STEP_TOOL = 'report_step';
@@ -34,23 +34,29 @@ export function buildAssistantConfig(
     .filter(turn => turn.role !== 'system')
     .map(turn => ({role: turn.role, content: turn.text}));
 
+  // 開口一番は script.ts の固定文言だけで決まる（LLM の判断が要らない）ので、
+  // buildFirstMessage が静的な文字列として組み立てる。これを firstMessage に
+  // 渡せば、通話開始直後に LLM のターンを待たずに即座に話し始められる
+  // （実機テストで「最初の会話のスタートが遅い」と確認された、LLM に開口一番を
+  // 生成させていたことによる遅延の対策）。まれに解決できない場合
+  // （firstMessage が undefined）だけ、model-generated モードにフォールバックする。
+  const firstMessage = buildFirstMessage(mode, resume, recapMinutes);
+  const firstMessageMode =
+    firstMessage != null
+      ? ('assistant-speaks-first' as const)
+      : ('assistant-speaks-first-with-model-generated-message' as const);
+
   return {
     name: 'nemuri-guide',
-    // firstMessage は与えない（LLM に system prompt の手順1から生成させ、
-    // report_step を呼ばせる）。'assistant-speaks-first' は firstMessage が
-    // 静的な文字列であることを前提にしたモードで、firstMessage 未指定のままだと
-    // AI は何も言わずに沈黙する（実機ログで、ユーザーの声だけが録音され AI の
-    // 発話が一切無いことを確認済み）。開口一番も LLM に生成させたい場合は
-    // 'assistant-speaks-first-with-model-generated-message' を使う
-    // （@vapi-ai/react-native の型定義 api.ts で確認）。
-    firstMessageMode: 'assistant-speaks-first-with-model-generated-message' as const,
+    firstMessage,
+    firstMessageMode,
     model: {
       provider: modelConfig.provider,
       model: modelConfig.model,
       messages: [
         {
           role: 'system' as const,
-          content: buildSystemPrompt(mode, resume, recapMinutes),
+          content: buildSystemPrompt(mode, resume),
         },
         ...priorMessages,
       ],

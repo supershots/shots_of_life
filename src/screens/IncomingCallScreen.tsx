@@ -58,6 +58,7 @@ export function IncomingCallScreen({onAnswered, onClosed}: Props): React.JSX.Ele
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.center}>
+        {kind === 'redial' && <Text style={styles.badge}>再着信（続きから）</Text>}
         <Text style={styles.title}>ねむりガイド</Text>
         <Text style={styles.subtitle}>
           {kind === 'redial' ? '続きからいこう' : 'そろそろ寝る準備をはじめよう'}
@@ -91,6 +92,17 @@ const styles = StyleSheet.create({
   center: {
     alignItems: 'center',
     marginTop: 96,
+  },
+  badge: {
+    color: '#0b1020',
+    backgroundColor: '#e8b04b',
+    fontSize: 12,
+    fontWeight: '700',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginBottom: 10,
+    overflow: 'hidden',
   },
   title: {
     color: '#ffffff',

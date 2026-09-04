@@ -12,6 +12,7 @@ import {
   LAST_STEP_ID,
   PHONE_TOUCHED_PROMPTS,
   REDIAL_CONFIG,
+  STEPS,
   stepIndexById,
 } from '../config/script';
 import type {CallEndReason, CallSession, Mode, NightLogEntry, TranscriptTurn} from '../types';
@@ -172,11 +173,28 @@ class CallOrchestratorImpl extends EventEmitter {
     await this.persistSession();
     try {
       await this.vapi.start(this.mode, resume, this.session.transcript, recapMinutes);
+      this.reportOpeningStepOptimistically(resume);
     } catch (error) {
       // vapi.start() が失敗したときの call-end イベントは飛んでこない
       // （そもそも通話が始まっていないので）。ここで捕まえておかないと、
       // 画面が「準備中…」のまま、エラーも出ないまま固まって見える。
       this.emit('error', error);
+    }
+  }
+
+  /**
+   * 開口一番は buildFirstMessage が静的な文字列として組み立てて話す（LLM の
+   * ターンを待たない、実機テストで確認された起動遅延の対策）ため、その分の
+   * report_step が飛んでこない。どのステップから話し始めるかはこの時点で
+   * 決定的にわかるので、画面の「準備中…」表示がいつまでも残らないよう、
+   * ここでアプリ側から先に反映しておく。
+   */
+  private reportOpeningStepOptimistically(
+    resume?: {lastCompletedStepIndex: number},
+  ): void {
+    const openingStepId = resume ? STEPS[resume.lastCompletedStepIndex + 1]?.id : STEPS[0].id;
+    if (openingStepId) {
+      this.handleStepReported(openingStepId);
     }
   }
 

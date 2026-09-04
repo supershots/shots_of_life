@@ -14,6 +14,7 @@ interface Props {
  */
 export function InCallScreen({onEnded}: Props): React.JSX.Element {
   const [stepIndex, setStepIndex] = useState(-1);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const onStep = (index: number) => setStepIndex(index);
@@ -22,11 +23,17 @@ export function InCallScreen({onEnded}: Props): React.JSX.Element {
         onEnded();
       }
     };
+    const onError = (err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+    };
     CallOrchestrator.on('stepChanged', onStep);
     CallOrchestrator.on('statusChanged', onStatus);
+    CallOrchestrator.on('error', onError);
     return () => {
       CallOrchestrator.off('stepChanged', onStep);
       CallOrchestrator.off('statusChanged', onStatus);
+      CallOrchestrator.off('error', onError);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -38,6 +45,7 @@ export function InCallScreen({onEnded}: Props): React.JSX.Element {
       <View style={styles.center}>
         <Text style={styles.label}>通話中</Text>
         <Text style={styles.step}>{step ? step.label : '準備中…'}</Text>
+        {error != null && <Text style={styles.error}>エラー: {error}</Text>}
       </View>
       <TouchableOpacity style={styles.hangup} onPress={() => CallOrchestrator.hangup()}>
         <Text style={styles.hangupText}>通話を終える</Text>
@@ -67,6 +75,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     marginTop: 12,
+  },
+  error: {
+    color: '#ff8080',
+    fontSize: 13,
+    marginTop: 16,
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
   hangup: {
     borderRadius: 24,

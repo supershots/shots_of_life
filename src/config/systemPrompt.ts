@@ -133,12 +133,10 @@ export function buildSystemPrompt(
   return parts.join('\n\n');
 }
 
-export function buildFirstMessage(mode: Mode, resume?: ResumeContext): string | undefined {
-  // 通常の開始は systemPrompt の手順1（開口一番）が最初の発話になる。
-  // firstMessage を明示指定すると LLM を介さず即再生されるため、開口一番の台詞を渡す。
-  if (resume?.isAwayReconnect || resume?.isRedial) {
-    // 再開時は文脈依存の言い回しが必要なので、firstMessage は使わず LLM に生成させる。
-    return undefined;
-  }
-  return STEPS[0].line[mode];
+export function buildFirstMessage(_mode: Mode, _resume?: ResumeContext): string | undefined {
+  // firstMessage を明示指定すると LLM を介さずその文字列がそのまま再生され、
+  // report_step ツールを呼ぶ機会がない（LLM のターンが発生しないため）。
+  // 開口一番も他の手順と同じく report_step で進捗を拾えるよう、常に undefined
+  // にして LLM 自身に system prompt の手順1から生成させる。
+  return undefined;
 }

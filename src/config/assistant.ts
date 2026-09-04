@@ -37,10 +37,13 @@ export function buildAssistantConfig(
   return {
     name: 'nemuri-guide',
     // firstMessage は与えない（LLM に system prompt の手順1から生成させ、
-    // report_step を呼ばせる）。ただし firstMessageMode は明示しておかないと
-    // 既定が「ユーザーが話すのを待つ」側になり、AI が一言も発しないまま
-    // 沈黙し続ける（実機ログで charactersUsed:0 のまま無言待機を確認済み）。
-    firstMessageMode: 'assistant-speaks-first' as const,
+    // report_step を呼ばせる）。'assistant-speaks-first' は firstMessage が
+    // 静的な文字列であることを前提にしたモードで、firstMessage 未指定のままだと
+    // AI は何も言わずに沈黙する（実機ログで、ユーザーの声だけが録音され AI の
+    // 発話が一切無いことを確認済み）。開口一番も LLM に生成させたい場合は
+    // 'assistant-speaks-first-with-model-generated-message' を使う
+    // （@vapi-ai/react-native の型定義 api.ts で確認）。
+    firstMessageMode: 'assistant-speaks-first-with-model-generated-message' as const,
     model: {
       provider: modelConfig.provider,
       model: modelConfig.model,

@@ -36,9 +36,11 @@ export function buildAssistantConfig(
 
   return {
     name: 'nemuri-guide',
-    // firstMessage/firstMessageMode はあえて省略する。空の firstMessage と
-    // firstMessageMode: 'assistant-speaks-first' の組み合わせが 400 の原因の
-    // 一つかもしれないので、まずは省略してデフォルト挙動に任せる。
+    // firstMessage は与えない（LLM に system prompt の手順1から生成させ、
+    // report_step を呼ばせる）。ただし firstMessageMode は明示しておかないと
+    // 既定が「ユーザーが話すのを待つ」側になり、AI が一言も発しないまま
+    // 沈黙し続ける（実機ログで charactersUsed:0 のまま無言待機を確認済み）。
+    firstMessageMode: 'assistant-speaks-first' as const,
     model: {
       provider: modelConfig.provider,
       model: modelConfig.model,

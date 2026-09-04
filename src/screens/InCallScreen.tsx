@@ -76,7 +76,15 @@ export function InCallScreen({onEnded}: Props): React.JSX.Element {
         <Text style={styles.step}>{step ? step.label : '準備中…'}</Text>
         {error != null && <Text style={styles.error}>エラー: {error}</Text>}
       </View>
-      <TouchableOpacity style={styles.hangup} onPress={() => CallOrchestrator.hangup()}>
+      <TouchableOpacity
+        style={styles.hangup}
+        onPress={() => {
+          // vapi.start() が失敗して通話が始まっていない場合、call-end は
+          // 二度と飛んでこない（hangup() は何もしない）ので、待たずに
+          // その場でホームへ戻す。実際に通話中でも、切る操作としては自然。
+          CallOrchestrator.hangup();
+          onEnded();
+        }}>
         <Text style={styles.hangupText}>通話を終える</Text>
       </TouchableOpacity>
     </SafeAreaView>

@@ -210,3 +210,25 @@ describe('CallOrchestrator: redial answer resumes from the interrupted step', ()
     expect(systemMessage).toContain('続きからいこう');
   });
 });
+
+describe('CallOrchestrator: vapi.start() rejects', () => {
+  it('emits an error instead of leaving the screen stuck with no signal', async () => {
+    const onError = jest.fn();
+    CallOrchestrator.on('error', onError);
+    const startSpy = jest
+      .spyOn(vapiInstance(), 'start')
+      .mockRejectedValueOnce(new Error('invalid public key'));
+
+    await CallOrchestrator.answer();
+    await flush();
+
+    expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    // status still flips to in_call synchronously before the failed start,
+    // matching what the InCallScreen "準備中..." placeholder relies on --
+    // the important part is the error is surfaced, not silently swallowed.
+    expect(CallOrchestrator.getStatus()).toBe('in_call');
+
+    CallOrchestrator.off('error', onError);
+    startSpy.mockRestore();
+  });
+});

@@ -170,7 +170,14 @@ class CallOrchestratorImpl extends EventEmitter {
     await CallServiceNative.start();
     await WakeScreenNative.keepAwake();
     await this.persistSession();
-    await this.vapi.start(this.mode, resume, this.session.transcript, recapMinutes);
+    try {
+      await this.vapi.start(this.mode, resume, this.session.transcript, recapMinutes);
+    } catch (error) {
+      // vapi.start() が失敗したときの call-end イベントは飛んでこない
+      // （そもそも通話が始まっていないので）。ここで捕まえておかないと、
+      // 画面が「準備中…」のまま、エラーも出ないまま固まって見える。
+      this.emit('error', error);
+    }
   }
 
   private handleStepReported(stepId: string) {

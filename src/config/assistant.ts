@@ -2,14 +2,13 @@ import type {Mode} from '../types';
 import {
   callTuning,
   endCallFunctionEnabled,
-  idleSpeechHook,
   modelConfig,
   startSpeakingPlan,
   stopSpeakingPlan,
   transcriberConfig,
   voiceConfig,
 } from './vapiCallConfig';
-import {buildFirstMessage, buildSystemPrompt, ResumeContext} from './systemPrompt';
+import {buildSystemPrompt, ResumeContext} from './systemPrompt';
 import type {TranscriptTurn} from '../types';
 
 export const REPORT_STEP_TOOL = 'report_step';
@@ -37,8 +36,9 @@ export function buildAssistantConfig(
 
   return {
     name: 'nemuri-guide',
-    firstMessage: buildFirstMessage(mode, resume),
-    firstMessageMode: 'assistant-speaks-first' as const,
+    // firstMessage/firstMessageMode はあえて省略する。空の firstMessage と
+    // firstMessageMode: 'assistant-speaks-first' の組み合わせが 400 の原因の
+    // 一つかもしれないので、まずは省略してデフォルト挙動に任せる。
     model: {
       provider: modelConfig.provider,
       model: modelConfig.model,
@@ -94,7 +94,10 @@ export function buildAssistantConfig(
     startSpeakingPlan,
     stopSpeakingPlan,
     endCallFunctionEnabled,
-    hooks: [idleSpeechHook],
+    // hooks: [idleSpeechHook] はいったん外してある。実機テストで通話開始が
+    // 400 Bad Request になったため、最も推測で書いた（現行ドキュメント未確認の）
+    // このフィールドから疑って外した。通話が繋がることを確認してから、
+    // 現行の Vapi ドキュメントで正しい形を確認のうえ戻すこと（03章参照）。
   };
 }
 

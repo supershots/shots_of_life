@@ -57,6 +57,10 @@ export function buildAssistantConfig(
       tools: [
         {
           type: 'function' as const,
+          // async: サーバー(tool.server.url)を持たないクライアント専用ツールなので、
+          // 同期（既定値）のままだと応答が永久に来ず、AI が「ちょっと待って」を
+          // 繰り返し待ち続けてしまう（実機テストで確認済み）。fire-and-forget でよい。
+          async: true,
           function: {
             name: REPORT_STEP_TOOL,
             description:
@@ -72,6 +76,7 @@ export function buildAssistantConfig(
         },
         {
           type: 'function' as const,
+          async: true,
           function: {
             name: MARK_TONIGHT_OFF_TOOL,
             description:
@@ -88,6 +93,7 @@ export function buildAssistantConfig(
       provider: voiceConfig.provider,
       voiceId: voiceConfig.voiceId,
       model: voiceConfig.model,
+      language: voiceConfig.language,
     },
     transcriber: {
       provider: transcriberConfig.provider,
@@ -131,6 +137,7 @@ export function buildAnnouncementAssistantConfig(text: string) {
       provider: voiceConfig.provider,
       voiceId: voiceConfig.voiceId,
       model: voiceConfig.model,
+      language: voiceConfig.language,
     },
     transcriber: {
       provider: transcriberConfig.provider,

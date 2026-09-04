@@ -75,12 +75,14 @@ export const transcriberConfig = {
 export const voiceConfig = {
   provider: '11labs' as const,
   /**
-   * eleven_turbo_v2_5 / eleven_flash 系は低遅延優先で、日本語の発音精度が
-   * 落ちる（実機テストで「日本語の精度が甘い」と確認済み）。このアプリは
-   * 相槌のリアルタイム性より聞き取りやすさが重要なので、多言語向けに
-   * 品質が高い eleven_multilingual_v2 を使う。
+   * eleven_multilingual_v2 は言語強制（language フィールド）に対応しておらず、
+   * 自動言語判定に任せるため、漢字が中国語として読まれることがある
+   * （実機テストで確認済み）。SDK の型定義コメントによれば、言語強制に
+   * 対応しているのは現時点で Turbo v2.5 のみ。日本語を強制するため
+   * eleven_turbo_v2_5 + language: 'ja' の組み合わせに戻す。
    */
-  model: 'eleven_multilingual_v2' as const,
+  model: 'eleven_turbo_v2_5' as const,
+  language: 'ja' as const,
   /**
    * 04章: 声は必ず実機のスピーカーで選ぶこと（PC/ヘッドホンで選ぶと圧縮後に別物になる）。
    * ここは人間にしか決められない。候補を3つに絞って実機比較した結果の voiceId を入れる。
